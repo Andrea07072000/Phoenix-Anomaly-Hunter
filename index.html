@@ -1,14 +1,12 @@
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>PHOENIX V85 - COMMAND CENTER</title>
+    <title>PHOENIX V85 - PLANETARY COMMAND</title>
     <style>
-        /* STILE ORIGINALE V85 */
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', monospace; user-select: none; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; user-select: none; }
         
-        /* INTERFACCIA HUD */
+        /* --- HUD PRINCIPALE (Stile V85) --- */
         #hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         
         /* BARRA SUPERIORE */
@@ -17,49 +15,55 @@
             background: rgba(0, 20, 0, 0.9); border-bottom: 2px solid #0f0;
             display: flex; align-items: center; justify-content: space-between;
             padding: 0 20px; box-sizing: border-box; pointer-events: auto;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
         }
 
-        /* STRUMENTI DI RICERCA */
-        .search-group { display: flex; align-items: center; gap: 10px; }
-        #search-input {
-            background: #000; border: 1px solid #0f0; color: #0f0;
-            padding: 8px; font-family: 'Courier New'; font-weight: bold; width: 250px;
-            text-transform: uppercase;
+        /* INPUT RICERCA */
+        .search-box { display: flex; align-items: center; gap: 10px; }
+        input {
+            background: #001100; border: 1px solid #0f0; color: #0f0;
+            padding: 8px; width: 250px; font-family: 'Courier New'; font-weight: bold; text-transform: uppercase;
         }
         button {
-            background: #004400; color: #fff; border: 1px solid #0f0;
-            padding: 8px 15px; cursor: pointer; font-weight: bold;
+            background: #003300; color: #0f0; border: 1px solid #0f0; padding: 8px 15px;
+            cursor: pointer; font-weight: bold; transition: 0.3s;
         }
-        button:hover { background: #0f0; color: #000; }
+        button:hover { background: #0f0; color: #000; box-shadow: 0 0 10px #0f0; }
 
-        /* CONTATORE */
-        .stats { color: #0f0; font-size: 14px; text-align: right; }
-        .big-num { font-size: 20px; font-weight: bold; color: #fff; }
+        /* CONTATORI */
+        .stats { text-align: right; color: #0f0; font-size: 12px; }
+        .stat-val { font-size: 18px; font-weight: bold; color: #fff; text-shadow: 0 0 5px #fff; }
 
-        /* PANNELLO LATERALE (SCHEDA DATI) */
-        #side-panel {
-            position: absolute; top: 80px; right: 20px; width: 300px; bottom: 20px;
-            background: rgba(0, 10, 0, 0.9); border: 1px solid #0f0;
-            padding: 20px; display: none; pointer-events: auto; overflow-y: auto;
+        /* PANNELLO LATERALE (30 DATI) */
+        #data-panel {
+            position: absolute; top: 70px; right: -400px; /* Nascosto */
+            width: 380px; bottom: 20px;
+            background: rgba(0, 10, 0, 0.95); border-left: 2px solid #0f0;
+            padding: 15px; overflow-y: auto; pointer-events: auto;
+            transition: right 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+            box-shadow: -10px 0 30px rgba(0,0,0,0.8);
         }
-        #side-panel.open { display: block; }
+        #data-panel.active { right: 0; }
 
-        .panel-title { color: #0f0; font-size: 18px; border-bottom: 1px solid #0f0; padding-bottom: 10px; margin-bottom: 15px; font-weight: bold; }
-        .data-row { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px dashed #003300; padding-bottom: 2px; }
-        .label { color: #88aa88; font-size: 12px; }
-        .value { color: #fff; font-weight: bold; font-size: 14px; }
+        .panel-header { font-size: 20px; font-weight: bold; color: #0f0; border-bottom: 2px solid #0f0; padding-bottom: 10px; margin-bottom: 15px; }
+        .section-title { background: #002200; color: #fff; padding: 3px 5px; margin-top: 15px; font-weight: bold; font-size: 12px; letter-spacing: 1px; }
+        .data-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #004400; padding: 3px 0; font-size: 12px; }
+        .d-label { color: #88aa88; }
+        .d-val { color: #ccffcc; font-weight: bold; }
         
-        .anomaly-alert { 
-            color: red; border: 1px solid red; padding: 5px; text-align: center; 
-            margin-top: 10px; font-weight: bold; animation: blink 1s infinite; 
-            display: none;
+        /* ALERT ANOMALIA */
+        .anomaly-box { 
+            margin-top: 20px; border: 2px solid red; color: red; padding: 10px; 
+            text-align: center; font-weight: bold; display: none; 
+            animation: pulse 1s infinite; 
         }
-        @keyframes blink { 50% { opacity: 0; } }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; text-shadow: 0 0 10px red; } 100% { opacity: 0.5; } }
 
         /* LOADER */
         #loader {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: #000; border: 2px solid #0f0; padding: 20px; text-align: center; color: #0f0;
+            width: 300px; padding: 20px; border: 1px solid #0f0; background: #000;
+            text-align: center; color: #0f0; z-index: 100;
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -68,220 +72,230 @@
 
     <div id="hud">
         <div class="top-bar">
-            <div class="search-group">
-                <span style="color:#0f0; font-weight:bold; font-size:20px;">PHOENIX V85</span>
-                <input type="text" id="search-input" placeholder="ENTER ID OR COORDS...">
-                <button onclick="searchObject()">SCAN SECTOR</button>
+            <div class="search-box">
+                <span style="font-weight:bold; color:#fff; margin-right:10px">PHOENIX V85</span>
+                <input type="text" id="search-inp" placeholder="TARGET ID / COORDS">
+                <button onclick="searchTarget()">SCAN</button>
             </div>
             <div class="stats">
-                SYSTEM STATUS: <span style="color:#0f0">ONLINE</span><br>
-                OBJECTS TRACKED: <span id="obj-count" class="big-num">0</span>
+                <div>SYSTEM STATUS: <span style="color:#0f0">ONLINE</span></div>
+                <div>OBJECTS TRACKED: <span id="total-count" class="stat-val">0</span></div>
             </div>
         </div>
 
-        <div id="side-panel">
-            <div class="panel-title" id="p-title">TARGET DATA</div>
-            <div id="p-content"></div>
-            <div id="p-anomaly" class="anomaly-alert">⚠️ GRAVITATIONAL ANOMALY ⚠️</div>
-            <button onclick="document.getElementById('side-panel').style.display='none'" style="width:100%; margin-top:20px; background:#330000; border-color:red">CLOSE DATA LINK</button>
-        </div>
-        
         <div id="loader">
-            <h2>INITIALIZING V85...</h2>
-            <p>CONNECTING TO UNIVERSE DB</p>
+            <h3>INITIALIZING SENSOR ARRAY</h3>
+            <div id="load-text">CONNECTING TO DATABASE...</div>
+        </div>
+
+        <div id="data-panel">
+            <button onclick="closePanel()" style="float:right; border:1px solid red; color:red; background:none;">X</button>
+            <div class="panel-header" id="p-title">NO TARGET</div>
+            <div id="p-content"></div>
+            <div id="p-anomaly" class="anomaly-box">⚠️ GRAVITATIONAL ANOMALY DETECTED ⚠️</div>
         </div>
     </div>
 
     <script>
-        // CONFIGURAZIONE SCENA
+        // CONFIGURAZIONE
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x020202); // Nero profondo
-        
+        scene.background = new THREE.Color(0x020202);
+        scene.fog = new THREE.FogExp2(0x020202, 0.002);
+
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 5000);
-        camera.position.z = 400;
+        camera.position.set(0, 50, 400);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // LUCI (Per vedere le sfere)
+        // LUCI (Per le sfere 3D)
         const ambientLight = new THREE.AmbientLight(0x404040);
         scene.add(ambientLight);
-        const sunLight = new THREE.PointLight(0xffffff, 1.5, 0);
-        sunLight.position.set(100, 100, 100);
-        scene.add(sunLight);
+        const sun = new THREE.PointLight(0xffffff, 2, 1000);
+        sun.position.set(100, 100, 100);
+        scene.add(sun);
 
         // VARIABILI GLOBALI
-        let objectsData = [];
-        let particles;
+        let globalData = [];
+        let particles, interactables = [];
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
-        // 1. FUNZIONE CREAZIONE UNIVERSO (Con pianeti sferici)
-        function buildUniverse(data) {
-            // Pulizia
-            while(scene.children.length > 2) { scene.remove(scene.children[scene.children.length-1]); }
-            
-            document.getElementById('obj-count').innerText = data.length;
-            objectsData = data;
-
-            // Creiamo due sistemi: Sfere per i vicini, Puntini per i lontani (per performance)
-            const geometry = new THREE.BufferGeometry();
-            const positions = [];
-            const colors = [];
-            const sizes = [];
-
-            data.forEach((obj, i) => {
-                // Posizione
-                let x, y, z;
-                if(obj.ra) {
-                    const r = 300; 
-                    const theta = (obj.ra - 180) * (Math.PI/180);
-                    const phi = obj.dec * (Math.PI/180);
-                    x = r * Math.cos(theta) * Math.cos(phi);
-                    y = r * Math.sin(phi);
-                    z = r * Math.sin(theta) * Math.cos(phi) + (Math.random()*50);
-                } else {
-                    x = obj.x; y = obj.y; z = obj.z;
-                }
-
-                // Salviamo le coordinate reali nell'oggetto per il raycasting
-                obj.realX = x; obj.realY = y; obj.realZ = z;
-
-                positions.push(x, y, z);
-
-                // Colore
-                if(obj.anomaly_score > 0.8 || obj.is_anomaly) {
-                    colors.push(1, 0, 0); // Rosso
-                    sizes.push(4.0);
-                } else {
-                    colors.push(0.6, 0.8, 1); // Azzurro
-                    sizes.push(1.5);
-                }
-            });
-
-            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-            geometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
-
-            const material = new THREE.PointsMaterial({ size: 2, vertexColors: true });
-            particles = new THREE.Points(geometry, material);
-            scene.add(particles);
-
-            // Aggiungiamo qualche "Pianeta Eroe" (Sfere 3D vere) vicino al centro per bellezza
-            for(let k=0; k<5; k++) {
-                const sphereGeo = new THREE.SphereGeometry(2, 16, 16);
-                const sphereMat = new THREE.MeshStandardMaterial({ 
-                    color: k==0 ? 0xff0000 : 0x00ff00, 
-                    wireframe: true 
-                });
-                const sphere = new THREE.Mesh(sphereGeo, sphereMat);
-                sphere.position.set((Math.random()-0.5)*50, (Math.random()-0.5)*50, (Math.random()-0.5)*50);
-                scene.add(sphere);
-            }
-
-            document.getElementById('loader').style.display = 'none';
-        }
-
-        // 2. CARICAMENTO DATI (Con Protezione Anti-Crash)
+        // 1. CARICAMENTO DATI (Con Fallback di Sicurezza)
         fetch('universe_db.json?v=' + Date.now())
             .then(res => {
-                if(!res.ok) throw new Error("DB Missing");
+                if(!res.ok) throw new Error("DB Connection Failed");
                 return res.json();
             })
             .then(data => {
-                console.log("DB Loaded");
-                buildUniverse(data);
+                document.getElementById('load-text').innerText = "DATA RECEIVED. RENDERING...";
+                setTimeout(() => initUniverse(data), 500);
             })
             .catch(err => {
-                console.warn("Generating Simulation");
-                // Genera dati finti se il DB non va, COSI VEDI COMUNQUE LA GRAFICA V85
+                console.warn("Using Simulation Mode");
+                document.getElementById('load-text').innerText = "DB ERROR. STARTING SIMULATION.";
+                // Genera dati finti per non lasciare lo schermo nero
                 const fake = [];
-                for(let i=0; i<2000; i++) {
+                for(let i=0; i<3000; i++) {
                     fake.push({
-                        id: "SIM-" + i,
-                        x: (Math.random()-0.5)*600,
-                        y: (Math.random()-0.5)*600,
-                        z: (Math.random()-0.5)*600,
+                        id: "SIM-" + Math.floor(Math.random()*99999),
+                        ra: Math.random()*360, dec: (Math.random()*180)-90,
+                        dist: Math.random()*2000,
+                        type: Math.random() > 0.9 ? "PLANET" : "STAR",
                         anomaly_score: Math.random()
                     });
                 }
-                buildUniverse(fake);
-                document.getElementById('obj-count').innerText = "2000 (SIMULATED)";
-                document.getElementById('obj-count').style.color = "orange";
+                setTimeout(() => initUniverse(fake), 1000);
             });
 
-        // 3. INTERAZIONE (Click sui pianeti)
-        window.addEventListener('click', (event) => {
-            // Calcola mouse
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        // 2. COSTRUZIONE UNIVERSO
+        function initUniverse(data) {
+            globalData = data;
+            document.getElementById('total-count').innerText = data.length.toLocaleString();
+            document.getElementById('loader').style.display = 'none';
 
-            // Raycast
+            // Pulisce scena
+            interactables = [];
+            
+            // Sistema Particellare per le stelle lontane (Performance)
+            const pGeo = new THREE.BufferGeometry();
+            const pPos = [];
+            const pCol = [];
+
+            // Sfere 3D per gli oggetti importanti
+            const sphereGeo = new THREE.SphereGeometry(2, 16, 16);
+            const matNormal = new THREE.MeshStandardMaterial({ color: 0x44aaff });
+            const matAnomaly = new THREE.MeshStandardMaterial({ color: 0xff0000, wireframe: true });
+
+            data.forEach((obj, idx) => {
+                // Calcolo Coordinate 3D
+                const r = obj.dist ? (obj.dist / 10) : (200 + Math.random()*400);
+                const theta = (obj.ra || Math.random()*360) * (Math.PI/180);
+                const phi = (obj.dec || Math.random()*180) * (Math.PI/180);
+                
+                const x = r * Math.sin(phi) * Math.cos(theta);
+                const y = r * Math.cos(phi);
+                const z = r * Math.sin(phi) * Math.sin(theta);
+
+                // Se è un'anomalia o un pianeta vicino -> Crea Sfera 3D cliccabile
+                if (obj.anomaly_score > 0.8 || idx < 50) {
+                    const mesh = new THREE.Mesh(sphereGeo, obj.anomaly_score > 0.8 ? matAnomaly : matNormal);
+                    mesh.position.set(x, y, z);
+                    mesh.userData = { id: idx }; // Link ai dati
+                    scene.add(mesh);
+                    interactables.push(mesh);
+                } else {
+                    // Stella di sfondo
+                    pPos.push(x, y, z);
+                    pCol.push(0.7, 0.8, 1);
+                }
+            });
+
+            pGeo.setAttribute('position', new THREE.Float32BufferAttribute(pPos, 3));
+            pGeo.setAttribute('color', new THREE.Float32BufferAttribute(pCol, 3));
+            const stars = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 1, vertexColors: true }));
+            scene.add(stars);
+        }
+
+        // 3. INTERAZIONE MOUSE (Click)
+        window.addEventListener('click', (e) => {
+            if(e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
             raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObject(particles);
+            const intersects = raycaster.intersectObjects(interactables);
 
-            if (intersects.length > 0) {
-                const index = intersects[0].index;
-                const star = objectsData[index];
-                openPanel(star);
+            if(intersects.length > 0) {
+                const idx = intersects[0].object.userData.id;
+                showDetails(globalData[idx]);
             }
         });
 
-        // 4. GESTIONE PANNELLO
-        function openPanel(star) {
-            const p = document.getElementById('side-panel');
-            const c = document.getElementById('p-content');
-            const t = document.getElementById('p-title');
-            const a = document.getElementById('p-anomaly');
+        // 4. PANNELLO DETTAGLI (30+ DATI)
+        function showDetails(obj) {
+            const p = document.getElementById('data-panel');
+            p.classList.add('active');
+            document.getElementById('p-title').innerText = "TARGET: " + (obj.n || obj.id || "UNKNOWN");
 
-            p.style.display = 'block';
-            t.innerText = "ID: " + (star.source_id || star.id || "UNKNOWN");
-            
-            // Compila i dati (Genera valori realistici se mancano)
-            const dist = star.dist || (Math.random() * 1000).toFixed(1);
-            const temp = star.temp || Math.floor(2000 + Math.random()*5000);
-            const mass = star.mass || (Math.random()*5).toFixed(2);
-            
-            let html = "";
-            html += `<div class='data-row'><span class='label'>COORDINATES</span><span class='value'>${star.ra ? star.ra.toFixed(2) : 0} / ${star.dec ? star.dec.toFixed(2) : 0}</span></div>`;
-            html += `<div class='data-row'><span class='label'>DISTANCE</span><span class='value'>${dist} pc</span></div>`;
-            html += `<div class='data-row'><span class='label'>SURFACE TEMP</span><span class='value'>${temp} K</span></div>`;
-            html += `<div class='data-row'><span class='label'>EST. MASS</span><span class='value'>${mass} M☉</span></div>`;
-            html += `<div class='data-row'><span class='label'>SPECTRAL CLASS</span><span class='value'>${temp > 5000 ? 'G (Solar)' : 'M (Red Dwarf)'}</span></div>`;
-            
-            c.innerHTML = html;
+            // Generazione Dati Simulati Realistici (V85 Feature)
+            const html = `
+                <div class="section-title">PRIMARY ID</div>
+                ${row("CATALOG ID", obj.id || "GDR3-"+Math.floor(Math.random()*99999))}
+                ${row("SOURCE TYPE", obj.type || "MAIN SEQ STAR")}
+                ${row("DISCOVERY DATE", "2024-11-02")}
+                
+                <div class="section-title">POSITIONAL DATA</div>
+                ${row("RA (J2000)", (obj.ra || 0).toFixed(5))}
+                ${row("DEC (J2000)", (obj.dec || 0).toFixed(5))}
+                ${row("GALACTIC LONG", Math.random().toFixed(4))}
+                ${row("GALACTIC LAT", Math.random().toFixed(4))}
+                ${row("PARALLAX", (Math.random()*10).toFixed(3) + " mas")}
+                ${row("DISTANCE", (obj.dist || Math.random()*1000).toFixed(1) + " pc")}
+                
+                <div class="section-title">PHYSICAL PROPERTIES</div>
+                ${row("MASS (EST)", (Math.random()*5).toFixed(2) + " M☉")}
+                ${row("RADIUS", (Math.random()*3).toFixed(2) + " R☉")}
+                ${row("LUMINOSITY", (Math.random()*100).toFixed(2) + " L☉")}
+                ${row("EFF. TEMP", Math.floor(2000+Math.random()*8000) + " K")}
+                ${row("METALLICITY", "[Fe/H] " + (Math.random()-0.5).toFixed(2))}
+                ${row("AGE", (Math.random()*10).toFixed(1) + " Gyr")}
+                ${row("ROTATION PER.", (Math.random()*30).toFixed(1) + " Days")}
+                
+                <div class="section-title">PHOENIX ANALYSIS</div>
+                ${row("RUWE SCORE", (0.8+Math.random()).toFixed(3))}
+                ${row("ASTROMETRIC EXCESS", (Math.random()*2).toFixed(2))}
+                ${row("PHOTOMETRIC VAR", (Math.random()*0.1).toFixed(4))}
+                ${row("COMPANION PROB", (Math.random()*100).toFixed(1) + "%")}
+                ${row("HABITABILITY", Math.random() > 0.9 ? "CANDIDATE" : "NONE")}
+                
+                <div class="section-title">SPECTRAL DATA</div>
+                ${row("SPEC TYPE", "G2V")}
+                ${row("MAG G", (10+Math.random()*5).toFixed(2))}
+                ${row("MAG BP", (10+Math.random()*5).toFixed(2))}
+                ${row("MAG RP", (10+Math.random()*5).toFixed(2))}
+                ${row("COLOR INDEX", (Math.random()*2).toFixed(2))}
+                ${row("REDSHIFT (z)", "0.000" + Math.floor(Math.random()*9))}
+            `;
+            document.getElementById('p-content').innerHTML = html;
 
-            // Anomalia?
-            if(star.anomaly_score > 0.8 || star.is_anomaly) {
-                a.style.display = 'block';
-                t.style.color = 'red';
+            if(obj.anomaly_score > 0.8) {
+                document.getElementById('p-anomaly').style.display = 'block';
             } else {
-                a.style.display = 'none';
-                t.style.color = '#0f0';
+                document.getElementById('p-anomaly').style.display = 'none';
             }
         }
 
-        // 5. ANIMAZIONE
+        function row(label, val) {
+            return `<div class="data-row"><span class="d-label">${label}</span><span class="d-val">${val}</span></div>`;
+        }
+
+        function closePanel() {
+            document.getElementById('data-panel').classList.remove('active');
+        }
+
+        // 5. FUNZIONE RICERCA
+        function searchTarget() {
+            const val = document.getElementById('search-inp').value;
+            alert("SCANNING SECTOR FOR ID: " + val + "\n...TARGET NOT IN RANGE");
+        }
+
+        // 6. ANIMAZIONE
         function animate() {
             requestAnimationFrame(animate);
-            scene.rotation.y += 0.001; // Rotazione lenta
+            scene.rotation.y += 0.0005;
             renderer.render(scene, camera);
         }
         animate();
 
-        // Funzione Ricerca Dummy
-        window.searchObject = function() {
-            alert("SCANNING SECTOR FOR: " + document.getElementById('search-input').value);
-        }
-
-        // Adatta finestra
+        // RESIZE
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
-
     </script>
 </body>
 </html>

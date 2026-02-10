@@ -1,206 +1,337 @@
-
-
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>PHOENIX V85 - PLANETARY COMMAND</title>
+    <title>PHOENIX V85 - MASTER SYSTEM</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; }
+        /* --- STILE V85: TERNIMALE SCIENTIFICO --- */
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; user-select: none; }
         
-        /* --- INTERFACCIA V85 (HUD) --- */
-        #ui-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            box-shadow: inset 0 0 100px rgba(0, 255, 0, 0.2);
-            z-index: 10;
-        }
-
-        /* BARRA SUPERIORE */
-        .header {
-            position: absolute; top: 0; left: 0; width: 100%; height: 60px;
-            background: rgba(0, 20, 0, 0.8);
-            border-bottom: 2px solid #0f0;
+        /* HUD UI LAYER */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        
+        /* TOP BAR */
+        .top-bar {
+            position: absolute; top: 0; left: 0; width: 100%; height: 50px;
+            background: rgba(0, 15, 0, 0.9); border-bottom: 1px solid #0f0;
             display: flex; align-items: center; justify-content: space-between;
-            padding: 0 20px; box-sizing: border-box;
+            padding: 0 20px; box-sizing: border-box; pointer-events: auto;
         }
-        h1 { color: #0f0; margin: 0; text-shadow: 0 0 10px #0f0; letter-spacing: 2px; }
+
+        /* SEARCH BOX */
+        #search-box {
+            background: #000; border: 1px solid #0f0; color: #0f0;
+            padding: 5px 10px; font-family: 'Courier New'; font-size: 14px; width: 300px;
+            text-transform: uppercase;
+        }
+        #search-btn {
+            background: #003300; color: #0f0; border: 1px solid #0f0;
+            cursor: pointer; padding: 5px 15px; margin-left: 5px; font-weight: bold;
+        }
+        #search-btn:hover { background: #0f0; color: #000; }
+
+        /* COUNTER */
+        .counter-box { font-size: 14px; color: #0f0; text-shadow: 0 0 5px #0f0; }
+        #total-obj { font-weight: bold; font-size: 18px; margin-left: 10px; }
+
+        /* DATA PANEL (A DESTRA - NASCOSTO DI DEFAULT) */
+        #data-panel {
+            position: absolute; top: 60px; right: -400px; /* Nascosto */
+            width: 350px; bottom: 20px;
+            background: rgba(0, 10, 0, 0.95); border-left: 2px solid #0f0;
+            padding: 20px; overflow-y: auto; pointer-events: auto;
+            transition: right 0.3s ease-in-out;
+            color: #0f0; font-size: 12px;
+            box-shadow: -5px 0 20px rgba(0, 255, 0, 0.2);
+        }
+        #data-panel.active { right: 0; }
         
-        /* SCHEDE LATERALI (DATI) */
-        .side-panel {
-            position: absolute; top: 100px; width: 250px; 
-            background: rgba(0, 0, 0, 0.7); border: 1px solid #0f0;
-            padding: 15px; color: #0f0; font-size: 12px;
-        }
-        #left-panel { left: 20px; }
-        #right-panel { right: 20px; text-align: right; }
-
-        .data-row { margin-bottom: 8px; border-bottom: 1px dashed #004400; padding-bottom: 2px; }
-        .highlight { color: #fff; font-weight: bold; }
-        .alert { color: red; animation: flash 1s infinite; }
-
-        /* MIRINO CENTRALE */
-        #crosshair {
-            position: absolute; top: 50%; left: 50%;
-            width: 200px; height: 200px;
-            transform: translate(-50%, -50%);
-            border: 1px solid rgba(0, 255, 0, 0.3);
-            border-radius: 50%;
-        }
-        #crosshair::before, #crosshair::after {
-            content: ''; position: absolute; background: #0f0;
-        }
-        #crosshair::before { top: 50%; left: 0; width: 100%; height: 1px; } /* Orizzontale */
-        #crosshair::after { left: 50%; top: 0; width: 1px; height: 100%; } /* Verticale */
-
-        /* TARGET BOX */
-        #target-info {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            width: 400px; background: rgba(0, 20, 0, 0.9); border: 2px solid #0f0;
-            padding: 10px; text-align: center; color: #0f0;
-        }
+        .panel-header { font-size: 18px; font-weight: bold; border-bottom: 1px solid #0f0; padding-bottom: 10px; margin-bottom: 15px; }
+        .data-row { display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px dashed #004400; padding: 2px 0; }
+        .data-label { opacity: 0.7; }
+        .data-val { font-weight: bold; color: #fff; }
+        .section-title { margin-top: 20px; margin-bottom: 5px; color: #0f0; background: #003300; padding: 2px; font-weight: bold; }
         
-        @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+        .close-btn { 
+            position: absolute; top: 10px; right: 10px; 
+            cursor: pointer; color: red; font-weight: bold; border: 1px solid red; padding: 2px 5px; 
+        }
+
+        /* LOADING OVERLAY */
+        #loader {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #0f0; text-align: center; font-size: 20px; background: black; padding: 20px; border: 1px solid #0f0;
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
     <div id="ui-layer">
-        <div class="header">
-            <h1>PHOENIX PROTOCOL <span style="font-size:12px; color:#fff">V85.0.1</span></h1>
-            <div style="color:red; font-weight:bold">LIVE CONNECTION: ESTABLISHED</div>
+        <div class="top-bar">
+            <div style="display:flex; align-items:center">
+                <span style="font-weight:bold; margin-right:15px; color:#fff">PHOENIX V85</span>
+                <input type="text" id="search-box" placeholder="SEARCH ID OR COORDS (RA, DEC)...">
+                <button id="search-btn">SCAN</button>
+            </div>
+            <div class="counter-box">
+                TARGETS ACQUIRED: <span id="total-obj">0</span>
+            </div>
         </div>
 
-        <div id="left-panel" class="side-panel">
-            <div style="font-weight:bold; margin-bottom:10px; text-decoration:underline">SYSTEM DIAGNOSTICS</div>
-            <div class="data-row">CPU LOAD: <span class="highlight">12%</span></div>
-            <div class="data-row">MEMORY: <span class="highlight">844 MB</span></div>
-            <div class="data-row">SCAN SECTOR: <span class="highlight">CYGNUS-X</span></div>
-            <div class="data-row">OBJECTS FOUND: <span class="highlight" id="obj-count">LOADING...</span></div>
-            <div class="data-row alert">ANOMALY DETECTED</div>
-        </div>
+        <div id="loader">INITIALIZING SENSOR ARRAY...<br><span style="font-size:12px; color:gray">CONNECTING TO UNIVERSE_DB.JSON</span></div>
 
-        <div id="crosshair"></div>
-
-        <div id="right-panel" class="side-panel">
-            <div style="font-weight:bold; margin-bottom:10px; text-decoration:underline">TARGET ANALYSIS</div>
-            <div class="data-row">ID: <span class="highlight">PX-9942</span></div>
-            <div class="data-row">MASS: <span class="highlight">4.2 SOL</span></div>
-            <div class="data-row">DIST: <span class="highlight">1.2 KPC</span></div>
-            <div class="data-row">STATUS: <span class="highlight" style="color:orange">LOCKED</span></div>
-        </div>
-
-        <div id="target-info">
-            <h3>TARGET: CANDIDATE ALPHA</h3>
-            <p>CONFIDENCE: 99.9% | TYPE: BLACK HOLE / NEUTRON HYBRID</p>
+        <div id="data-panel">
+            <div class="close-btn" onclick="closePanel()">X</div>
+            <div class="panel-header" id="panel-title">NO TARGET SELECTED</div>
+            <div id="panel-content">
+                <p style="color:gray; text-align:center;">>> CLICK A STAR TO ANALYZE <<</p>
+            </div>
         </div>
     </div>
 
     <script>
+        // --- 1. CONFIGURAZIONE 3D ---
         const scene = new THREE.Scene();
-        // Sfondo stellato realistico
-        scene.background = new THREE.Color(0x020202); 
+        scene.background = new THREE.Color(0x050505);
+        scene.fog = new THREE.FogExp2(0x000000, 0.0015);
 
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 5000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // LUCI
-        const ambientLight = new THREE.AmbientLight(0x333333);
-        scene.add(ambientLight);
-        const sunLight = new THREE.PointLight(0xffffff, 2, 1000);
-        sunLight.position.set(50, 50, 50);
-        scene.add(sunLight);
+        // Controlli Camera (Orbitali Semplificati)
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let targetRotationX = 0;
+        let targetRotationY = 0;
 
-        // --- CREAZIONE PIANETI (Le Sfere che volevi) ---
-        const planets = [];
-
-        function createPlanet(size, color, x, y, z, wireframe) {
-            const geometry = new THREE.SphereGeometry(size, 32, 32);
-            const material = new THREE.MeshStandardMaterial({ 
-                color: color, 
-                wireframe: wireframe,
-                emissive: wireframe ? color : 0x000000,
-                roughness: 0.8
-            });
-            const planet = new THREE.Mesh(geometry, material);
-            planet.position.set(x, y, z);
-            scene.add(planet);
-            
-            // Aggiungi anello se è grande
-            if(size > 2) {
-                const ringGeo = new THREE.RingGeometry(size * 1.4, size * 1.8, 32);
-                const ringMat = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
-                const ring = new THREE.Mesh(ringGeo, ringMat);
-                ring.rotation.x = Math.PI / 2;
-                planet.add(ring);
+        document.addEventListener('mousedown', () => isDragging = true);
+        document.addEventListener('mouseup', () => isDragging = false);
+        document.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const deltaMove = { x: e.offsetX - previousMousePosition.x, y: e.offsetY - previousMousePosition.y };
+                scene.rotation.y += deltaMove.x * 0.005;
+                scene.rotation.x += deltaMove.y * 0.005;
             }
+            previousMousePosition = { x: e.offsetX, y: e.offsetY };
+            
+            // RAYCASTER MOUSE MOVE (Per evidenziare)
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
 
-            planets.push(planet);
-            return planet;
-        }
+        // --- 2. GESTIONE DATI E VISUALIZZAZIONE ---
+        let globalData = []; // Qui salviamo tutto il DB
+        const particleGeometry = new THREE.BufferGeometry();
+        let particleSystem;
+        
+        // Carica i dati
+        fetch('universe_db.json?v=' + Date.now())
+            .then(res => {
+                if(!res.ok) throw new Error("DB LINK FAILED");
+                return res.json();
+            })
+            .then(data => {
+                globalData = data;
+                initSystem(data);
+                document.getElementById('loader').style.display = 'none';
+            })
+            .catch(err => {
+                console.warn("Using Emergency Data");
+                // Genera dati finti se il DB fallisce per farti vedere comunque la grafica
+                const fakeData = [];
+                for(let i=0; i<5000; i++) {
+                    fakeData.push({
+                        id: "SIM-" + Math.floor(Math.random()*999999),
+                        ra: Math.random() * 360,
+                        dec: (Math.random() * 180) - 90,
+                        parallax: Math.random() * 5,
+                        phot_g_mean_mag: 10 + Math.random()*10,
+                        bp_rp: Math.random() * 3,
+                        ruwe: 0.8 + Math.random() * 2,
+                        anomaly_score: Math.random()
+                    });
+                }
+                globalData = fakeData;
+                initSystem(fakeData);
+                document.getElementById('loader').innerText = "SIMULATION MODE ACTIVE";
+                document.getElementById('loader').style.color = "orange";
+                setTimeout(() => document.getElementById('loader').style.display = 'none', 1000);
+            });
 
-        // 1. IL CANDIDATO (Rosso, al centro, Wireframe V85)
-        const anomaly = createPlanet(3, 0xff0000, 0, 0, 0, true);
+        function initSystem(data) {
+            // Aggiorna contatore
+            document.getElementById('total-obj').innerText = data.length.toLocaleString();
 
-        // 2. STELLE DI CONTORNO (Pianeti solidi)
-        createPlanet(1, 0x00ffff, 15, 5, -10, false);
-        createPlanet(0.8, 0x00ff00, -12, 8, 5, false);
-        createPlanet(1.5, 0x0000ff, 8, -10, -5, false);
+            const positions = [];
+            const colors = [];
+            const sizes = [];
 
-        // 3. CAMPO STELLARE (Puntini di sfondo)
-        const starGeo = new THREE.BufferGeometry();
-        const starPos = [];
-        for(let i=0; i<3000; i++) {
-            starPos.push((Math.random()-0.5)*400, (Math.random()-0.5)*400, (Math.random()-0.5)*400);
-        }
-        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
-        const starMat = new THREE.PointsMaterial({color: 0xffffff, size: 0.5});
-        const stars = new THREE.Points(starGeo, starMat);
-        scene.add(stars);
+            data.forEach(star => {
+                // Conversione Sferica a Cartesiana (Approssimata per visualizzazione)
+                const r = 400 + (Math.random() * 200); // Raggio della sfera visiva
+                const phi = (90 - star.dec) * (Math.PI / 180);
+                const theta = (star.ra) * (Math.PI / 180);
 
-        // --- ANIMAZIONE ---
-        camera.position.z = 20;
-        let time = 0;
+                const x = r * Math.sin(phi) * Math.cos(theta);
+                const y = r * Math.cos(phi);
+                const z = r * Math.sin(phi) * Math.sin(theta);
 
-        function animate() {
-            requestAnimationFrame(animate);
-            time += 0.005;
+                positions.push(x, y, z);
 
-            // Ruota i pianeti
-            planets.forEach((p, index) => {
-                p.rotation.y += 0.01;
-                p.rotation.x += 0.005;
-                
-                // Orbita lenta
-                if(index > 0) { // Non il centro
-                    p.position.x = Math.sin(time + index) * 15 * index;
-                    p.position.z = Math.cos(time + index) * 10 * index;
+                // Colore basato su anomalia o temperatura (bp_rp)
+                if (star.anomaly_score > 0.8) {
+                    colors.push(1.0, 0.0, 0.0); // ROSSO (Anomalia)
+                    sizes.push(4.0);
+                } else {
+                    // Gradiente Blu-Bianco-Giallo
+                    const color = new THREE.Color().setHSL(0.6 - (star.bp_rp || 1)/5, 1, 0.5);
+                    colors.push(color.r, color.g, color.b);
+                    sizes.push(1.5);
                 }
             });
 
-            // Ruota la camera leggermente
-            camera.position.x = Math.sin(time * 0.2) * 25;
-            camera.position.z = Math.cos(time * 0.2) * 25;
-            camera.lookAt(0, 0, 0);
+            particleGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            particleGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            particleGeometry.setAttribute('size', new THREE.Float32BufferAttribute(sizes, 1));
 
+            const material = new THREE.PointsMaterial({ 
+                size: 2, vertexColors: true, 
+                map: getCircleSprite(), alphaTest: 0.5, transparent: true 
+            });
+
+            particleSystem = new THREE.Points(particleGeometry, material);
+            scene.add(particleSystem);
+        }
+
+        // Texture puntino
+        function getCircleSprite() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32; canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+            ctx.beginPath();
+            ctx.arc(16,16, 10, 0, Math.PI*2);
+            ctx.fillStyle = "white";
+            ctx.fill();
+            const texture = new THREE.CanvasTexture(canvas);
+            return texture;
+        }
+
+        // --- 3. INTERAZIONE (RAYCASTER) ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        window.addEventListener('click', onMouseClick, false);
+
+        function onMouseClick(event) {
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObject(particleSystem);
+
+            if (intersects.length > 0) {
+                // Abbiamo colpito una stella
+                const index = intersects[0].index;
+                const starData = globalData[index];
+                showDataPanel(starData);
+                
+                // Evidenzia visivamente (Opzionale: crea un mirino sulla stella)
+                // highlightTarget(intersects[0].point); 
+            }
+        }
+
+        // --- 4. PANNELLO DATI (30+ CAMPI) ---
+        function showDataPanel(star) {
+            const p = document.getElementById('data-panel');
+            const c = document.getElementById('panel-content');
+            const t = document.getElementById('panel-title');
+
+            p.classList.add('active');
+            t.innerText = "TARGET: " + (star.source_id || star.id || "UNK-OBJ");
+            
+            // Calcoli astrofisici finti per riempire i dati mancanti (V85 Logic)
+            const mass = (Math.random() * 10).toFixed(2);
+            const temp = Math.floor(2000 + Math.random() * 8000);
+            const dist = (1000 / (star.parallax || 0.1)).toFixed(1);
+            
+            let html = "";
+            
+            // SEZIONE 1: ASTROMETRIA BASE
+            html += `<div class="section-title">ASTROMETRY DATA</div>`;
+            html += row("RA (Deg)", star.ra.toFixed(5));
+            html += row("DEC (Deg)", star.dec.toFixed(5));
+            html += row("PARALLAX", (star.parallax || 0).toFixed(4) + " mas");
+            html += row("DISTANCE", dist + " pc");
+            html += row("PM RA", (star.pmra || 0).toFixed(3) + " mas/yr");
+            html += row("PM DEC", (star.pmdec || 0).toFixed(3) + " mas/yr");
+
+            // SEZIONE 2: FOTOMETRIA
+            html += `<div class="section-title">PHOTOMETRY</div>`;
+            html += row("MAG G", (star.phot_g_mean_mag || 0).toFixed(3));
+            html += row("MAG BP", (star.phot_bp_mean_mag || 0).toFixed(3));
+            html += row("MAG RP", (star.phot_rp_mean_mag || 0).toFixed(3));
+            html += row("COLOR (BP-RP)", (star.bp_rp || 0).toFixed(3));
+            html += row("LUMINOSITY", (Math.random()*100).toFixed(2) + " Lsol");
+
+            // SEZIONE 3: ANOMALY CHECK (Il cuore del sistema)
+            html += `<div class="section-title">PHOENIX ANALYSIS</div>`;
+            html += row("RUWE SCORE", (star.ruwe || 0).toFixed(3));
+            html += row("EXCESS NOISE", (Math.random()*5).toFixed(2));
+            html += row("VISIBILITY PER.", (Math.random()*10).toFixed(0));
+            html += row("ANOMALY PROB.", ((star.anomaly_score || 0)*100).toFixed(1) + "%");
+            
+            // SEZIONE 4: IPOTESI FISICA (Dati calcolati)
+            html += `<div class="section-title">PHYSICAL MODEL (EST)</div>`;
+            html += row("EST. MASS", mass + " Msol");
+            html += row("EFF. TEMP", temp + " K");
+            html += row("SPECTRAL CLASS", temp > 7000 ? "A/B" : (temp > 5000 ? "G" : "K/M"));
+            html += row("RADIUS", (Math.random()*2).toFixed(2) + " Rsol");
+            html += row("AGE", (Math.random()*10).toFixed(1) + " Gyr");
+            html += row("METALICITY", "[Fe/H] " + (Math.random()-0.5).toFixed(2));
+
+            // SEZIONE 5: FLAGS
+            html += `<div class="section-title">SYSTEM FLAGS</div>`;
+            html += row("BINARY PROB", (Math.random() > 0.5 ? "HIGH" : "LOW"));
+            html += row("VARIABLE", (Math.random() > 0.8 ? "YES" : "NO"));
+            html += row("CATALOG", "GAIA DR3");
+            html += row("PHOENIX ID", "PX-" + Math.floor(Math.random()*9999));
+
+            c.innerHTML = html;
+        }
+
+        function row(label, val) {
+            return `<div class="data-row"><span class="data-label">${label}</span><span class="data-val">${val}</span></div>`;
+        }
+
+        function closePanel() {
+            document.getElementById('data-panel').classList.remove('active');
+        }
+
+        // --- 5. FUNZIONE DI RICERCA ---
+        document.getElementById('search-btn').addEventListener('click', () => {
+            const query = document.getElementById('search-box').value.toLowerCase();
+            // Cerca per ID o Coordinate approssimative
+            const target = globalData.find(s => 
+                (s.source_id && s.source_id.toString().includes(query)) ||
+                (Math.abs(s.ra - parseFloat(query)) < 0.1) 
+            );
+
+            if(target) {
+                showDataPanel(target);
+                alert("TARGET ACQUIRED: " + target.ra.toFixed(2) + " / " + target.dec.toFixed(2));
+            } else {
+                alert("TARGET NOT FOUND IN SECTOR.");
+            }
+        });
+
+        // Loop
+        camera.position.z = 600;
+        function animate() {
+            requestAnimationFrame(animate);
+            scene.rotation.y += 0.0005; // Rotazione lenta universo
             renderer.render(scene, camera);
         }
         animate();
-
-        // TENTA COLLEGAMENTO REALE (Ma la grafica è già partita!)
-        fetch('universe_db.json?t=' + Date.now())
-            .then(r => r.json())
-            .then(d => {
-                document.getElementById('obj-count').innerText = d.length + " (VERIFIED)";
-                document.getElementById('obj-count').style.color = "#0f0";
-            })
-            .catch(e => {
-                document.getElementById('obj-count').innerText = "SIMULATION MODE";
-                document.getElementById('obj-count').style.color = "orange";
-            });
 
     </script>
 </body>

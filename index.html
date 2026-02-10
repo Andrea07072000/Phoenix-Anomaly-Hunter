@@ -2,112 +2,138 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>PHOENIX V100: ANOMALY HUNTER</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <title>Phoenix Anomaly Hunter - ULTIMATE</title>
     <style>
-        body { margin: 0; background: #000; color: #00ffaa; font-family: 'Share Tech Mono', monospace; overflow: hidden; }
-        #ui { position: absolute; top: 20px; left: 20px; pointer-events: none; }
-        h1 { margin: 0; font-size: 24px; text-shadow: 0 0 10px #00ffaa; }
-        #stats { font-size: 12px; color: #88aa88; margin-top: 5px; }
-        #tooltip { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); 
-                   background: rgba(0,20,0,0.9); border: 1px solid #00ffaa; padding: 15px; display: none; text-align: center; }
-        .anom-alert { color: #ff0000; font-weight: bold; animation: blink 1s infinite; }
-        @keyframes blink { 50% { opacity: 0.5; } }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Courier New', monospace; }
+        #hud {
+            position: absolute; top: 20px; left: 20px; z-index: 100;
+            color: #0f0; text-shadow: 0 0 5px #0f0; pointer-events: none;
+        }
+        h1 { margin: 0; font-size: 20px; }
+        .status-line { margin-top: 5px; font-size: 14px; }
+        #error-box { color: #ff3333; display: none; margin-top: 10px; border: 1px solid red; padding: 5px; background: rgba(50,0,0,0.5); }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-    <div id="ui">
-        <h1>PHOENIX V100</h1>
-        <div id="stats">SYSTEM STATUS: WAITING FOR DATA LINK...</div>
+    <div id="hud">
+        <h1>PHOENIX PROTOCOL V3</h1>
+        <div class="status-line" id="status">SYSTEM: INITIALIZING...</div>
+        <div class="status-line" id="count">OBJECTS: SCANNING...</div>
+        <div id="error-box"></div>
     </div>
-    <div id="tooltip"></div>
 
     <script>
+        // 1. CONFIGURAZIONE SCENA
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x000000, 0.00005);
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 1, 1000000);
-        camera.position.set(0, 500, 1000);
-        const renderer = new THREE.WebGLRenderer({antialias:true});
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
-        
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.autoRotate = true;
-        controls.autoRotateSpeed = 0.2;
 
-        const composer = new THREE.EffectComposer(renderer);
-        composer.addPass(new THREE.RenderPass(scene, camera));
-        composer.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85));
-
-        // STELLE SFONDO
-        const starsGeo = new THREE.BufferGeometry();
-        const starPos = [];
-        for(let i=0; i<10000; i++) starPos.push((Math.random()-0.5)*100000, (Math.random()-0.5)*100000, (Math.random()-0.5)*100000);
-        starsGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
-        scene.add(new THREE.Points(starsGeo, new THREE.PointsMaterial({color:0xffffff, size:2})));
-
-        const interactables = [];
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        fetch('universe_db.json').then(r => r.json()).then(data => {
-            document.getElementById('stats').innerText = `MONITORING ${data.length} OBJECTS | AI ACTIVE`;
-            
-            data.forEach(obj => {
-                const geo = new THREE.SphereGeometry(obj.r, 16, 16);
-                const mat = new THREE.MeshBasicMaterial({color: obj.col});
-                const mesh = new THREE.Mesh(geo, mat);
-                mesh.position.set(obj.x, obj.y, obj.z);
-                mesh.userData = obj;
-                scene.add(mesh);
-                interactables.push(mesh);
-
-                // Linea verso il piano 0 (riferimento visivo)
-                const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(obj.x, obj.y, obj.z), new THREE.Vector3(obj.x, 0, obj.z)]);
-                scene.add(new THREE.Line(lineGeo, new THREE.LineBasicMaterial({color: 0x222222})));
-            });
-        }).catch(e => {
-            document.getElementById('stats').innerText = "DATA LINK FAILED - USING LOCAL MODE";
+        // Controlli orbitali semplici (Mouse)
+        let mouseX = 0, mouseY = 0;
+        document.addEventListener('mousemove', (event) => {
+            mouseX = (event.clientX - window.innerWidth / 2) * 0.05;
+            mouseY = (event.clientY - window.innerHeight / 2) * 0.05;
         });
 
-        window.addEventListener('mousemove', (e) => {
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(interactables);
-            
-            const tt = document.getElementById('tooltip');
-            if(intersects.length > 0) {
-                const d = intersects[0].object.userData;
-                tt.style.display = 'block';
-                let html = `<div style="font-size:20px; color:${d.col}">${d.n}</div>`;
-                html += `<div>${d.t}</div>`;
-                if(d.t.includes("ANOMALY")) html += `<div class="anom-alert">⚠️ HIGH STATISTICAL DEVIATION DETECTED</div>`;
-                html += `<hr style="border:1px solid #333">`;
-                for(let k in d.d) html += `<div>${k}: ${d.d[k]}</div>`;
-                tt.innerHTML = html;
-                document.body.style.cursor = 'pointer';
-            } else {
-                tt.style.display = 'none';
-                document.body.style.cursor = 'default';
+        // 2. FUNZIONE PER GENERARE L'UNIVERSO
+        function renderUniverse(data, mode) {
+            // Pulisce la scena
+            while(scene.children.length > 0){ 
+                scene.remove(scene.children[0]); 
             }
-        });
 
+            const geometry = new THREE.BufferGeometry();
+            const positions = [];
+            const colors = [];
+
+            data.forEach(star => {
+                // Coordinate: Se sono dati veri usa RA/DEC, se no usa X/Y/Z simulati
+                let x, y, z;
+                if (mode === 'REAL') {
+                    x = (star.ra - 299) * 50; // Centra su Cygnus
+                    y = (star.dec - 40) * 50;
+                    z = (Math.random() * 200) - 100; // Profondità stimata
+                } else {
+                    x = star.x; y = star.y; z = star.z;
+                }
+
+                positions.push(x, y, z);
+
+                // Colore
+                if (star.anomaly_score > 0.8 || star.is_anomaly) {
+                    colors.push(1, 0, 0); // ROSSO (Anomalia)
+                } else {
+                    colors.push(0.5, 0.5, 1); // BLU (Normale)
+                }
+            });
+
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+            const material = new THREE.PointsMaterial({ size: 0.8, vertexColors: true });
+            const points = new THREE.Points(geometry, material);
+            scene.add(points);
+
+            // Aggiorna HUD
+            document.getElementById('status').innerText = "SYSTEM: ONLINE (" + mode + " MODE)";
+            document.getElementById('count').innerText = "OBJECTS: " + data.length;
+            if (mode === 'REAL') document.getElementById('status').style.color = '#0f0';
+            else document.getElementById('status').style.color = 'orange';
+        }
+
+        // 3. LOGICA DI CARICAMENTO (Il cuore del sistema)
+        const dbUrl = 'universe_db.json?v=' + Date.now(); // Cache Buster
+
+        document.getElementById('status').innerText = "SYSTEM: CONNECTING TO DB...";
+
+        fetch(dbUrl)
+            .then(response => {
+                if (!response.ok) throw new Error("Database not ready (Error " + response.status + ")");
+                return response.json();
+            })
+            .then(data => {
+                // SUCCESSO: Dati veri trovati
+                console.log("Dati reali caricati.");
+                renderUniverse(data, 'REAL');
+            })
+            .catch(error => {
+                // FALLIMENTO: Attiva simulazione di emergenza
+                console.warn("Errore caricamento:", error);
+                document.getElementById('error-box').style.display = 'block';
+                document.getElementById('error-box').innerText = "WARNING: " + error.message + ". SWITCHING TO SIMULATION.";
+                
+                // Genera dati finti per non lasciare lo schermo nero
+                const fakeData = [];
+                for(let i=0; i<5000; i++) {
+                    fakeData.push({
+                        x: (Math.random() - 0.5) * 800,
+                        y: (Math.random() - 0.5) * 800,
+                        z: (Math.random() - 0.5) * 800,
+                        is_anomaly: Math.random() > 0.99
+                    });
+                }
+                renderUniverse(fakeData, 'SIMULATION');
+            });
+
+        // 4. ANIMAZIONE LOOP
+        camera.position.z = 200;
         function animate() {
             requestAnimationFrame(animate);
-            controls.update();
-            composer.render();
+            
+            // Rotazione lenta
+            scene.rotation.y += 0.002;
+            scene.rotation.x += 0.001;
+
+            // Movimento interattivo leggero
+            camera.position.x += (mouseX - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY - camera.position.y) * 0.05;
+
+            renderer.render(scene, camera);
         }
         animate();
     </script>
 </body>
-
 </html>
-
-

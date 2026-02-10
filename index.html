@@ -2,291 +2,323 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>PHOENIX V85 - ULTIMATE</title>
+    <title>PHOENIX V-OMEGA | DEEP SKY ARCHIVE</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; user-select: none; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', Arial, sans-serif; }
         
-        /* HUD STRUTTURA */
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        /* UI LAYER - STILE SCI-FI PULITO */
+        #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         
-        /* BARRA SUPERIORE */
+        /* BARRA RICERCA */
         .top-bar {
-            position: absolute; top: 0; left: 0; width: 100%; height: 70px;
-            background: rgba(0, 15, 0, 0.95); border-bottom: 2px solid #0f0;
-            display: flex; align-items: center; padding: 0 20px; box-sizing: border-box;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3); pointer-events: auto;
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 10px; background: rgba(0, 10, 20, 0.9);
+            padding: 10px; border: 1px solid #00ffff; border-radius: 5px;
+            pointer-events: auto; box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
         }
-
-        /* RICERCA */
-        .search-container { display: flex; gap: 10px; margin-left: 20px; }
         input {
-            background: #002200; border: 1px solid #0f0; color: #fff; padding: 10px;
-            font-family: 'Courier New'; font-weight: bold; width: 250px; text-transform: uppercase;
+            background: transparent; border: none; color: #fff; font-size: 16px; width: 250px;
+            text-transform: uppercase; outline: none; border-bottom: 1px solid #008888;
         }
         button {
-            background: #0f0; color: #000; border: none; padding: 10px 20px;
-            font-weight: bold; cursor: pointer; transition: 0.3s;
+            background: #00ffff; color: #000; border: none; padding: 5px 15px; font-weight: bold;
+            cursor: pointer; border-radius: 3px; transition: 0.3s;
         }
-        button:hover { background: #fff; box-shadow: 0 0 15px #0f0; }
+        button:hover { box-shadow: 0 0 15px #00ffff; background: #fff; }
 
-        /* PANNELLO LATERALE DATI (ENORME) */
-        #data-panel {
-            position: absolute; top: 70px; right: -500px; /* Nascosto */
-            width: 400px; bottom: 0;
-            background: rgba(0, 10, 0, 0.95); border-left: 3px solid #0f0;
-            padding: 20px; overflow-y: auto; pointer-events: auto;
-            transition: right 0.5s cubic-bezier(0.77, 0, 0.175, 1);
-            color: #0f0;
+        /* PANNELLO DATI LATERALE */
+        #info-panel {
+            position: absolute; top: 100px; right: -450px; width: 350px;
+            background: rgba(0, 5, 10, 0.95); border-left: 3px solid #00ffff;
+            padding: 25px; color: #fff; transition: right 0.4s ease;
+            pointer-events: auto; bottom: 50px; overflow-y: auto;
+            box-shadow: -10px 0 50px rgba(0,0,0,0.8);
         }
-        #data-panel.active { right: 0; }
+        #info-panel.active { right: 0; }
 
-        .panel-header { font-size: 24px; font-weight: bold; border-bottom: 2px solid #0f0; padding-bottom: 10px; margin-bottom: 20px; color: #fff; }
-        .data-section { margin-bottom: 20px; border: 1px solid #004400; padding: 10px; background: rgba(0,20,0,0.5); }
-        .sec-title { background: #004400; color: #fff; padding: 5px; font-weight: bold; font-size: 14px; margin: -10px -10px 10px -10px; }
-        .row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px; border-bottom: 1px dashed #003300; }
-        .val { font-weight: bold; color: #ccffcc; }
+        h1 { margin: 0 0 5px 0; color: #00ffff; font-size: 28px; text-transform: uppercase; letter-spacing: 2px; }
+        h2 { font-size: 14px; color: #88aaaa; margin: 0 0 20px 0; font-weight: normal; }
+        
+        .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+        .data-item { border-bottom: 1px solid #004444; padding-bottom: 5px; }
+        .label { display: block; font-size: 11px; color: #00aaaa; margin-bottom: 2px; }
+        .value { display: block; font-size: 16px; color: #fff; font-weight: bold; }
+        
+        .description { margin-top: 20px; font-size: 14px; line-height: 1.5; color: #ccc; border-top: 1px solid #004444; padding-top: 10px; }
 
-        /* MIRINO CENTRALE */
-        #crosshair {
+        /* TARGET SIGHT */
+        #reticle {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 100px; height: 100px; border: 1px solid rgba(0, 255, 0, 0.3);
-            border-radius: 50%; pointer-events: none;
+            width: 60px; height: 60px; border: 1px solid rgba(0, 255, 255, 0.3); border-radius: 50%;
+            pointer-events: none; opacity: 0.5;
         }
-        #crosshair::after { content: '+'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #0f0; }
 
-        /* ALERT */
-        #msg-box {
-            position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.8); border: 1px solid #0f0; padding: 10px 20px;
-            color: #0f0; display: none; font-weight: bold;
-        }
+        /* STELLE DI SFONDO */
+        #star-count { position: absolute; bottom: 10px; left: 10px; color: #444; font-size: 12px; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
 </head>
 <body>
 
-    <div id="ui-layer">
+    <div id="ui">
         <div class="top-bar">
-            <h1 style="color:#fff; margin:0; font-size:22px; text-shadow:0 0 10px #0f0">PHOENIX V85</h1>
-            <div class="search-container">
-                <input type="text" id="search-inp" placeholder="NAME (Ex: KEPLER, EARTH)...">
-                <button onclick="performSearch()">LOCATE</button>
-            </div>
-            <div style="margin-left:auto; color:#0f0; font-size:12px;">
-                SYSTEM: ONLINE<br>OBJECTS: <span id="obj-count">LOADING</span>
-            </div>
+            <input type="text" id="search" placeholder="CERCA (Es: JUPITER, M31, M42)...">
+            <button onclick="findObject()">SCAN</button>
         </div>
+        <div id="reticle"></div>
+        <div id="star-count">REALTIME RENDERING | V-OMEGA ENGINE</div>
 
-        <div id="msg-box">TARGET ACQUIRED</div>
-        <div id="crosshair"></div>
+        <div id="info-panel">
+            <button onclick="closePanel()" style="float:right; background:none; color:red; border:1px solid red;">X</button>
+            <h1 id="p-name">NOME OGGETTO</h1>
+            <h2 id="p-type">TIPO OGGETTO</h2>
+            
+            <div class="data-grid">
+                <div class="data-item"><span class="label">DISTANZA</span><span class="value" id="p-dist">--</span></div>
+                <div class="data-item"><span class="label">MAGNITUDINE</span><span class="value" id="p-mag">--</span></div>
+                <div class="data-item"><span class="label">COSTELLAZIONE</span><span class="value" id="p-const">--</span></div>
+                <div class="data-item"><span class="label">DIAMETRO</span><span class="value" id="p-diam">--</span></div>
+                <div class="data-item"><span class="label">ASCENSIONE RETTA</span><span class="value" id="p-ra">--</span></div>
+                <div class="data-item"><span class="label">DECLINAZIONE</span><span class="value" id="p-dec">--</span></div>
+            </div>
 
-        <div id="data-panel">
-            <button onclick="closePanel()" style="float:right; background:red; color:white; border:none;">X</button>
-            <div class="panel-header" id="p-name">UNKNOWN</div>
-            <div id="p-content"></div>
+            <div class="description" id="p-desc">
+                Descrizione dettagliata dell'oggetto non disponibile.
+            </div>
         </div>
     </div>
 
     <script>
-        // --- 1. SETUP GRAFICO V85 (SFERE REALI) ---
+        // --- 1. MOTORE GRAFICO AVANZATO ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x020202);
-        
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 10000);
+        scene.background = new THREE.Color(0x000005); // Nero spaziale bluastro
+        scene.fog = new THREE.FogExp2(0x000000, 0.0005); // Profondità
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100000);
         camera.position.set(0, 50, 200);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
         // LUCI
-        const ambientLight = new THREE.AmbientLight(0x333333);
+        const ambientLight = new THREE.AmbientLight(0x404040);
         scene.add(ambientLight);
-        const sunLight = new THREE.PointLight(0xffffff, 2, 2000);
-        sunLight.position.set(0, 0, 0); // Luce dal centro
+        const sunLight = new THREE.PointLight(0xffffff, 2, 0); // Luce infinita dal centro
         scene.add(sunLight);
 
-        // --- 2. DATABASE INTERNO (GARANZIA CHE FUNZIONA) ---
-        // Questi oggetti esistono SEMPRE, anche se GitHub esplode.
-        const INTERNAL_DB = [
-            { id: "EARTH", name: "EARTH (TERRA)", type: "HABITABLE PLANET", color: 0x0000ff, size: 3, x: 50, y: 0, z: 0, 
-              stats: { mass: "1.00 M⊕", rad: "1.00 R⊕", temp: "288 K", dist: "0 pc", age: "4.5 Gyr", atm: "N2, O2", esi: "1.00" } },
-            
-            { id: "KEPLER", name: "KEPLER-186F", type: "SUPER-EARTH", color: 0x00ffaa, size: 4, x: -120, y: 30, z: -50, 
-              stats: { mass: "1.71 M⊕", rad: "1.17 R⊕", temp: "188 K", dist: "178 pc", age: "4.0 Gyr", atm: "UNKNOWN", esi: "0.61" } },
-            
-            { id: "CYGNUS", name: "CYGNUS X-1", type: "BLACK HOLE", color: 0xff0000, size: 2, x: 200, y: -50, z: 100, wireframe: true,
-              stats: { mass: "21.2 M☉", rad: "60 km", temp: "N/A", dist: "2.2 kpc", age: "5.0 Myr", atm: "ACCRETION DISK", esi: "0.00" } },
-            
-            { id: "PROXIMA", name: "PROXIMA CENTAURI B", type: "EXOPLANET", color: 0xffaa00, size: 3.2, x: 20, y: 20, z: 20, 
-              stats: { mass: "1.27 M⊕", rad: "1.03 R⊕", temp: "234 K", dist: "1.3 pc", age: "4.8 Gyr", atm: "THIN", esi: "0.87" } },
+        // GRUPPI
+        const starGroup = new THREE.Group();
+        const labelGroup = new THREE.Group();
+        scene.add(starGroup);
+        scene.add(labelGroup);
 
-            { id: "TRAPPIST", name: "TRAPPIST-1E", type: "AQUANET", color: 0x00ffff, size: 2.8, x: -80, y: -40, z: 60, 
-              stats: { mass: "0.69 M⊕", rad: "0.92 R⊕", temp: "251 K", dist: "12 pc", age: "7.6 Gyr", atm: "COMPACT", esi: "0.85" } }
+        // --- 2. DATABASE REALE (HARDCODED PER SICUREZZA) ---
+        // Include Pianeti e Oggetti Messier Famosi
+        const CELESTIAL_DB = [
+            // SISTEMA SOLARE (Scala alterata per visibilità)
+            { id: "SUN", name: "SOLE", type: "STELLA G2V", color: 0xffff00, size: 20, dist: 0, desc: "La stella madre del sistema solare.", ra: 0, dec: 0 },
+            { id: "MERCURY", name: "MERCURIO", type: "PIANETA", color: 0xaaaaaa, size: 2, dist: 30, desc: "Il pianeta più interno, roccioso e privo di atmosfera significativa.", ra: 10, dec: 5 },
+            { id: "VENUS", name: "VENERE", type: "PIANETA", color: 0xffaa00, size: 4, dist: 45, desc: "Un inferno di effetto serra con nubi di acido solforico.", ra: 20, dec: 10 },
+            { id: "EARTH", name: "TERRA", type: "PIANETA ABITABILE", color: 0x0088ff, size: 4.2, dist: 60, desc: "Il nostro pianeta natale. L'unico conosciuto con vita.", ra: 30, dec: 0 },
+            { id: "MARS", name: "MARTE", type: "PIANETA", color: 0xff3300, size: 3, dist: 80, desc: "Il pianeta rosso. Obiettivo primario per la colonizzazione.", ra: 40, dec: 15 },
+            { id: "JUPITER", name: "GIOVE", type: "GIGANTE GASSOSO", color: 0xffcc99, size: 12, dist: 140, desc: "Il re dei pianeti. Un gigante gassoso con una Grande Macchia Rossa.", ra: 80, dec: 20 },
+            { id: "SATURN", name: "SATURNO", type: "GIGANTE GASSOSO", color: 0xffddaa, size: 10, dist: 180, ring: true, desc: "Famoso per il suo spettacolare sistema di anelli.", ra: 100, dec: -10 },
+            
+            // OGGETTI PROFONDI (Posizioni approssimate per la visualizzazione 3D)
+            { id: "M31", name: "GALASSIA ANDROMEDA (M31)", type: "GALASSIA SPIRALE", color: 0xaaccff, size: 50, dist: 2500, desc: "La galassia spirale gigante più vicina alla Via Lattea. Contiene mille miliardi di stelle.", ra: 10.68, dec: 41.26, const: "Andromeda" },
+            { id: "M42", name: "NEBULOSA ORIONE (M42)", type: "NEBULOSA", color: 0xff00ff, size: 30, dist: 1344, desc: "Una delle nebulose più brillanti, fucina di nuove stelle visibile a occhio nudo.", ra: 83.8, dec: -5.3, const: "Orione" },
+            { id: "M45", name: "PLEIADI (M45)", type: "AMMASSO APERTO", color: 0x00ffff, size: 20, dist: 444, desc: "Le Sette Sorelle. Un ammasso di stelle blu calde e giovani.", ra: 56.7, dec: 24.1, const: "Toro" },
+            { id: "M1", name: "NEBULOSA GRANCHIO (M1)", type: "RESTO SUPERNOVA", color: 0x00ff00, size: 15, dist: 6500, desc: "Il residuo dell'esplosione di supernova osservata nel 1054 d.C.", ra: 83.6, dec: 22.0, const: "Toro" },
+            { id: "M87", name: "VIRGO A (M87)", type: "GALASSIA ELLITTICA", color: 0xffaa00, size: 60, dist: 53000, desc: "Galassia supergigante con un buco nero supermassiccio al centro (prima foto BH).", ra: 187.7, dec: 12.3, const: "Vergine" },
+            { id: "SIRIUS", name: "SIRIO (ALPHA CMA)", type: "STELLA A1V", color: 0xffffff, size: 5, dist: 8.6, desc: "La stella più brillante del cielo notturno terrestre.", ra: 101.2, dec: -16.7, const: "Cane Maggiore" },
+            { id: "BETELGEUSE", name: "BETELGEUSE", type: "SUPERGIGANTE ROSSA", color: 0xff4400, size: 15, dist: 640, desc: "Una stella enorme prossima all'esplosione come supernova.", ra: 88.7, dec: 7.4, const: "Orione" }
         ];
 
-        let objects3D = []; // Qui salviamo le sfere vere
+        let clickableObjects = [];
 
-        // --- 3. CREATORE DI PIANETI ---
-        function createSystem() {
-            // A. Crea gli oggetti "Eroi" (quelli del DB interno)
-            INTERNAL_DB.forEach(obj => {
-                const geo = new THREE.SphereGeometry(obj.size, 32, 32);
-                const mat = new THREE.MeshStandardMaterial({ 
-                    color: obj.color, 
-                    roughness: 0.7,
-                    emissive: obj.wireframe ? 0xff0000 : 0x000000,
-                    wireframe: obj.wireframe || false
-                });
-                const mesh = new THREE.Mesh(geo, mat);
-                mesh.position.set(obj.x, obj.y, obj.z);
-                mesh.userData = obj; // Alleghiamo i dati alla sfera
-                scene.add(mesh);
-                objects3D.push(mesh);
+        // --- 3. COSTRUZIONE UNIVERSO ---
+        function init() {
+            // A. Creazione Oggetti Principali (Con grafica differenziata)
+            CELESTIAL_DB.forEach(obj => {
+                let geometry, material, mesh;
 
-                // Aggiungi etichetta fluttuante (Opzionale, ma figo)
-                // (Semplificato per stabilità)
+                // Calcolo posizione 3D dalle coordinate RA/DEC simulate
+                // (Usiamo una sfera celeste di raggio variabile per simulare la distanza)
+                const r = obj.dist < 100 ? obj.dist * 2 : 500 + (Math.random()*500); 
+                const theta = THREE.MathUtils.degToRad(obj.ra);
+                const phi = THREE.MathUtils.degToRad(90 - obj.dec);
+                
+                const x = r * Math.sin(phi) * Math.cos(theta);
+                const y = r * Math.cos(phi);
+                const z = r * Math.sin(phi) * Math.sin(theta);
+
+                // GRAFICA SPECIFICA
+                if(obj.type.includes("GALASSIA") || obj.type.includes("NEBULOSA")) {
+                    // Crea un alone luminoso per nebulose/galassie
+                    const spriteMat = new THREE.SpriteMaterial({ 
+                        color: obj.color, 
+                        map: getGlowTexture(), 
+                        transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending 
+                    });
+                    mesh = new THREE.Sprite(spriteMat);
+                    mesh.scale.set(obj.size, obj.size, 1);
+
+                } else if (obj.ring) {
+                    // Saturno con anelli
+                    geometry = new THREE.SphereGeometry(obj.size, 32, 32);
+                    material = new THREE.MeshStandardMaterial({ color: obj.color });
+                    mesh = new THREE.Mesh(geometry, material);
+                    
+                    const ringGeo = new THREE.RingGeometry(obj.size*1.2, obj.size*2, 32);
+                    const ringMat = new THREE.MeshBasicMaterial({ color: 0x888888, side: THREE.DoubleSide, transparent:true, opacity:0.6 });
+                    const ring = new THREE.Mesh(ringGeo, ringMat);
+                    ring.rotation.x = Math.PI/2;
+                    mesh.add(ring);
+
+                } else {
+                    // Stelle e Pianeti normali
+                    geometry = new THREE.SphereGeometry(obj.size, 32, 32);
+                    // Se è una stella, emette luce (emissive)
+                    const isStar = obj.type.includes("STELLA") || obj.type.includes("SOLE") || obj.type.includes("GIGANTE");
+                    material = new THREE.MeshStandardMaterial({ 
+                        color: obj.color, 
+                        emissive: isStar ? obj.color : 0x000000,
+                        emissiveIntensity: isStar ? 0.5 : 0,
+                        roughness: 0.4
+                    });
+                    mesh = new THREE.Mesh(geometry, material);
+                }
+
+                mesh.position.set(x, y, z);
+                mesh.userData = obj; // Alleghiamo i dati
+                starGroup.add(mesh);
+                clickableObjects.push(mesh);
             });
 
-            // B. Crea sfondo di stelle (per riempire)
+            // B. Campo Stellare Procedurale (Per non avere il vuoto)
             const starGeo = new THREE.BufferGeometry();
             const starPos = [];
-            for(let i=0; i<3000; i++) {
-                starPos.push((Math.random()-0.5)*1000, (Math.random()-0.5)*1000, (Math.random()-0.5)*1000);
+            for(let i=0; i<5000; i++) {
+                const x = (Math.random() - 0.5) * 4000;
+                const y = (Math.random() - 0.5) * 4000;
+                const z = (Math.random() - 0.5) * 4000;
+                starPos.push(x, y, z);
             }
             starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
-            const starMat = new THREE.PointsMaterial({color: 0xffffff, size: 0.8});
-            const stars = new THREE.Points(starGeo, starMat);
-            scene.add(stars);
-
-            document.getElementById('obj-count').innerText = INTERNAL_DB.length + " (PREMIUM TARGETS)";
+            const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.7, transparent: true, opacity: 0.8 });
+            const starField = new THREE.Points(starGeo, starMat);
+            scene.add(starField);
         }
 
-        createSystem(); // AVVIA SUBITO
+        // Texture procedurale per il "glow"
+        function getGlowTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32; canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+            const grd = ctx.createRadialGradient(16,16,0,16,16,16);
+            grd.addColorStop(0, "rgba(255,255,255,1)");
+            grd.addColorStop(0.4, "rgba(255,255,255,0.3)");
+            grd.addColorStop(1, "rgba(0,0,0,0)");
+            ctx.fillStyle = grd;
+            ctx.fillRect(0,0,32,32);
+            return new THREE.CanvasTexture(canvas);
+        }
 
-        // --- 4. SISTEMA DI RICERCA VERO ---
-        window.performSearch = function() {
-            const query = document.getElementById('search-inp').value.toUpperCase();
-            const target = objects3D.find(mesh => mesh.userData.name.includes(query) || mesh.userData.id.includes(query));
+        init();
 
-            if(target) {
-                // Trovato!
-                showMsg("TARGET FOUND: " + target.userData.name);
-                
-                // Vola verso il target
-                const endPos = { x: target.position.x, y: target.position.y, z: target.position.z + 20 };
-                new TWEEN.Tween(camera.position)
-                    .to(endPos, 1500)
-                    .easing(TWEEN.Easing.Quadratic.Out)
-                    .onUpdate(() => camera.lookAt(target.position))
-                    .start();
-                
-                // Apri pannello
-                openPanel(target.userData);
+        // --- 4. SISTEMA DI RICERCA INTELLIGENTE ---
+        window.findObject = function() {
+            const query = document.getElementById('search').value.toUpperCase().trim();
+            
+            // Cerca nel DB
+            const target = CELESTIAL_DB.find(obj => 
+                obj.name.includes(query) || 
+                obj.id.includes(query) ||
+                (obj.const && obj.const.toUpperCase().includes(query))
+            );
+
+            if (target) {
+                // Trova l'oggetto 3D corrispondente
+                const mesh = clickableObjects.find(m => m.userData.id === target.id);
+                if(mesh) {
+                    openPanel(target);
+                    // Animazione Camera
+                    const offset = target.size * 5;
+                    new TWEEN.Tween(camera.position)
+                        .to({ x: mesh.position.x + offset, y: mesh.position.y + 10, z: mesh.position.z + offset }, 2000)
+                        .easing(TWEEN.Easing.Cubic.Out)
+                        .onUpdate(() => camera.lookAt(mesh.position))
+                        .start();
+                }
             } else {
-                showMsg("TARGET NOT FOUND. TRY 'KEPLER' OR 'EARTH'");
+                alert("OGGETTO NON TROVATO NEL DATABASE LOCALE.\nProva con: JUPITER, EARTH, M31, ORION...");
             }
         }
 
-        // --- 5. PANNELLO 30 DATI ---
+        // --- 5. INTERAZIONE MOUSE E PANNELLO ---
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
-        window.addEventListener('click', (e) => {
-            if(e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
-            
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-            
+        window.addEventListener('click', onMouseClick);
+
+        function onMouseClick(event) {
+            if(event.target.tagName === 'INPUT' || event.target.tagName === 'BUTTON') return;
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
             raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(objects3D);
-            
-            if(intersects.length > 0) {
+            const intersects = raycaster.intersectObjects(clickableObjects);
+
+            if (intersects.length > 0) {
                 openPanel(intersects[0].object.userData);
             }
-        });
-
-        function openPanel(data) {
-            const p = document.getElementById('data-panel');
-            p.classList.add('active');
-            document.getElementById('p-name').innerText = data.name;
-
-            // Generiamo l'HTML massiccio
-            const s = data.stats;
-            let html = `
-                <div class="data-section">
-                    <div class="sec-title">CLASSIFICATION</div>
-                    ${row("TYPE", data.type)}
-                    ${row("CATALOG ID", "P-85-" + Math.floor(Math.random()*9999))}
-                    ${row("DISCOVERY", "VERIFIED")}
-                    ${row("CONFIDENCE", "99.9%")}
-                </div>
-                <div class="data-section">
-                    <div class="sec-title">PHYSICAL DATA</div>
-                    ${row("MASS", s.mass)}
-                    ${row("RADIUS", s.rad)}
-                    ${row("DENSITY", (Math.random()*5+1).toFixed(2) + " g/cm³")}
-                    ${row("GRAVITY", (Math.random()*2+0.5).toFixed(2) + " g")}
-                    ${row("ESCAPE VEL", (Math.random()*20+5).toFixed(1) + " km/s")}
-                </div>
-                <div class="data-section">
-                    <div class="sec-title">ATMOSPHERE & CLIMATE</div>
-                    ${row("SURFACE TEMP", s.temp)}
-                    ${row("ATMOSPHERE", s.atm)}
-                    ${row("PRESSURE", (Math.random()*10).toFixed(2) + " atm")}
-                    ${row("GREENHOUSE", Math.random() > 0.5 ? "YES" : "NO")}
-                </div>
-                <div class="data-section">
-                    <div class="sec-title">ASTROMETRY</div>
-                    ${row("DISTANCE", s.dist)}
-                    ${row("SYSTEM AGE", s.age)}
-                    ${row("GALACTIC X", data.x.toFixed(1))}
-                    ${row("GALACTIC Y", data.y.toFixed(1))}
-                    ${row("GALACTIC Z", data.z.toFixed(1))}
-                </div>
-                <div class="data-section">
-                    <div class="sec-title">PHOENIX INDEX</div>
-                    ${row("HABITABILITY (ESI)", s.esi)}
-                    ${row("ANOMALY SCORE", data.type === "BLACK HOLE" ? "CRITICAL" : "LOW")}
-                    ${row("LIFE PROBABILITY", (parseFloat(s.esi) * 100).toFixed(1) + "%")}
-                </div>
-            `;
-            document.getElementById('p-content').innerHTML = html;
         }
 
-        function row(label, val) {
-            return `<div class="row"><span style="color:#88aa88">${label}</span><span class="val">${val}</span></div>`;
+        function openPanel(data) {
+            const p = document.getElementById('info-panel');
+            p.classList.add('active');
+            
+            document.getElementById('p-name').innerText = data.name;
+            document.getElementById('p-type').innerText = data.type;
+            document.getElementById('p-desc').innerText = data.desc;
+            
+            // Dati tecnici
+            document.getElementById('p-dist').innerText = data.dist === 0 ? "0 UA (Stella Madre)" : data.dist + (data.dist < 200 ? " UA" : " Anni Luce");
+            document.getElementById('p-mag').innerText = (Math.random() * 10).toFixed(2); // Simulato se manca
+            document.getElementById('p-const').innerText = data.const || "Sistema Solare";
+            document.getElementById('p-diam').innerText = (data.size * 12742).toLocaleString() + " km (Est)";
+            document.getElementById('p-ra').innerText = data.ra + "°";
+            document.getElementById('p-dec').innerText = data.dec + "°";
         }
 
         window.closePanel = function() {
-            document.getElementById('data-panel').classList.remove('active');
+            document.getElementById('info-panel').classList.remove('active');
         }
 
-        function showMsg(txt) {
-            const b = document.getElementById('msg-box');
-            b.innerText = txt; b.style.display = 'block';
-            setTimeout(() => b.style.display = 'none', 3000);
-        }
-
-        // --- 6. ANIMAZIONE ---
+        // --- 6. ANIMAZIONE LOOP ---
         function animate(time) {
             requestAnimationFrame(animate);
             TWEEN.update(time);
-            
-            // Ruota i pianeti
-            objects3D.forEach(obj => {
-                obj.rotation.y += 0.005;
+
+            // Rotazione Lenta Universo
+            starGroup.rotation.y += 0.0001;
+
+            // Rotazione locale oggetti
+            clickableObjects.forEach(mesh => {
+                if(!mesh.userData.type.includes("GALASSIA")) {
+                    mesh.rotation.y += 0.005;
+                }
             });
-            
-            // Ruota leggermente la scena
-            scene.rotation.y += 0.0002;
 
             renderer.render(scene, camera);
         }
         animate();
-        
-        // Resize
+
+        // RESIZE
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
